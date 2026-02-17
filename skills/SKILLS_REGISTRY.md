@@ -30,6 +30,7 @@ Agents should:
 | `lint-fix` | Before commit / on demand | Runs linters and auto-fixes across the monorepo |
 | `test-run` | After code changes | Runs test suites for affected packages |
 | `dependency-add` | Need to add a package | Adds dependency using correct package manager (pnpm or uv) |
+| `checkpoint` | At logical milestones | Creates a versioned Entire snapshot of codebase + agent context |
 
 ---
 
@@ -42,3 +43,20 @@ Agents MUST check these trigger conditions after making changes:
 3. **Modified any Python or TypeScript file** → Run `lint-fix`
 4. **Finished a feature or fix** → Run `test-run`
 5. **Need a new library** → Run `dependency-add` (never run npm/pip directly)
+6. **Completed a logical milestone** → Run `checkpoint` to version agent context
+
+---
+
+## AI Infrastructure
+
+### Long-Term Memory (Supermemory)
+Agents can store and retrieve semantic memories via the `/memory/add` and
+`/memory/search` API endpoints, or directly through `app.services.memory.MemoryService`.
+Use `container_tags` to namespace memories per agent or user.
+
+### Context Versioning (Entire CLI)
+Entire captures agent reasoning at every git commit via hooks in `.claude/settings.json`.
+- Strategy: `manual-commit` — checkpoints happen on git commits
+- Browse history: `entire log`
+- Compare checkpoints: `entire diff <id>`
+- Use the `checkpoint` skill at logical milestones

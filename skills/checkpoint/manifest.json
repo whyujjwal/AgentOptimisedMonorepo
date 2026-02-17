@@ -1,0 +1,30 @@
+{
+  "name": "checkpoint",
+  "version": "1.0.0",
+  "description": "Creates an Entire context checkpoint to version the current agent thought process and codebase state. Use at logical milestones (feature complete, before risky refactor, etc.).",
+  "trigger": {
+    "on_event": "milestone",
+    "manual": true
+  },
+  "steps": [
+    "Stage all current changes",
+    "Create a git commit as a checkpoint",
+    "Entire hooks auto-capture the context"
+  ],
+  "commands": [
+    "git add -A",
+    "git commit -m \"checkpoint: ${MESSAGE}\""
+  ],
+  "inputs": [
+    {
+      "name": "MESSAGE",
+      "description": "Checkpoint description (e.g., 'auth feature complete')",
+      "required": true
+    }
+  ],
+  "outputs": [],
+  "required_tools": ["git", "entire"],
+  "estimated_duration": "5s",
+  "risk_level": "low",
+  "notes": "Entire CLI auto-captures agent reasoning via hooks on commit. Use manual-commit strategy."
+}

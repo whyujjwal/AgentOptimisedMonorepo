@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./dev.db"
+    DATABASE_URL: str = "sqlite:///./dev.db"
 
     # AI Memory
     SUPERMEMORY_API_KEY: str = ""

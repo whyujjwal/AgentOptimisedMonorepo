@@ -16,3 +16,8 @@
 - API types come from `@repo/shared-types` — never define API response types locally.
 - Use `@repo/ui` components before creating new ones.
 - Environment variables visible to the browser must start with `NEXT_PUBLIC_`.
+- Need a package? → `bash skills/dependency-add/run.sh js <package> web`
+
+## Skills
+When backend schemas change, run `bash skills/type-sync/run.sh` from repo root
+to regenerate TypeScript types in `@repo/shared-types`.
