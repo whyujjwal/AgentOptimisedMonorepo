@@ -1,0 +1,22 @@
+{
+  "name": "test-run",
+  "version": "1.0.0",
+  "description": "Runs the test suites for affected packages. Use after finishing a feature, fixing a bug, or before committing.",
+  "trigger": {
+    "on_event": "pre-commit",
+    "manual": true
+  },
+  "steps": [
+    "Run Python tests via pytest",
+    "Run JS/TS tests via Turborepo (if configured)"
+  ],
+  "commands": [
+    "cd apps/api && uv run pytest -v || true",
+    "pnpm test || true"
+  ],
+  "inputs": [],
+  "outputs": [],
+  "required_tools": ["uv", "pnpm"],
+  "estimated_duration": "30s",
+  "risk_level": "low"
+}

@@ -1,0 +1,38 @@
+{
+  "name": "dependency-add",
+  "version": "1.0.0",
+  "description": "Adds a dependency using the correct package manager. Prevents accidental use of npm/pip in this monorepo.",
+  "trigger": {
+    "manual": true
+  },
+  "steps": [
+    "Determine if the dependency is JS/TS or Python",
+    "Run the appropriate install command"
+  ],
+  "commands": {
+    "javascript": "pnpm add ${PACKAGE} --filter=${WORKSPACE}",
+    "javascript_dev": "pnpm add -D ${PACKAGE} --filter=${WORKSPACE}",
+    "python": "cd apps/api && uv add ${PACKAGE}"
+  },
+  "inputs": [
+    {
+      "name": "PACKAGE",
+      "description": "Package name (e.g., 'zod', 'httpx')",
+      "required": true
+    },
+    {
+      "name": "WORKSPACE",
+      "description": "For JS packages: workspace filter (e.g., 'web', '@repo/ui'). Not needed for Python.",
+      "required": false
+    },
+    {
+      "name": "LANG",
+      "description": "Language: 'js' or 'py'",
+      "required": true
+    }
+  ],
+  "outputs": [],
+  "required_tools": ["pnpm", "uv"],
+  "estimated_duration": "15s",
+  "risk_level": "low"
+}
