@@ -31,6 +31,7 @@ Agents should:
 | `test-run` | After code changes | Runs test suites for affected packages |
 | `dependency-add` | Need to add a package | Adds dependency using correct package manager (pnpm or uv) |
 | `memory` | Any time | Save important context or recall past decisions via local vector DB |
+| `docker` | On demand | Manage full stack (API + PostgreSQL) via Docker Compose |
 | `checkpoint` | At logical milestones | Creates a versioned Entire snapshot of codebase + agent context |
 
 ---
@@ -47,6 +48,7 @@ Agents MUST check these trigger conditions after making changes:
 6. **Completed a logical milestone** → Run `checkpoint` to version agent context
 7. **Want to remember a decision, pattern, or preference** → Run `memory save`
 8. **Need past context before starting a task** → Run `memory recall`
+9. **Need to start or manage the local stack** → Run `docker up|down|migrate`
 
 ---
 

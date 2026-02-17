@@ -10,6 +10,8 @@ A production-ready monorepo architected from the ground up for **human and AI ag
 - [Architecture at a Glance](#architecture-at-a-glance)
 - [Repository Structure](#repository-structure)
 - [Getting Started](#getting-started)
+  - [Option A — Docker (recommended)](#option-a--docker-recommended)
+  - [Option B — Local dev without Docker](#option-b--local-dev-without-docker)
 - [The Stack](#the-stack)
   - [Backend — FastAPI](#backend--fastapi)
   - [Frontend — Next.js](#frontend--nextjs)
@@ -30,6 +32,10 @@ A production-ready monorepo architected from the ground up for **human and AI ag
   - [The Type Contract](#the-type-contract)
   - [Commit Conventions](#commit-conventions)
 - [Context Versioning with Entire](#context-versioning-with-entire)
+- [Docker](#docker)
+  - [Services](#services)
+  - [Docker Commands](#docker-commands)
+  - [Connecting to Postgres](#connecting-to-postgres)
 - [Backend Deep Dive](#backend-deep-dive)
   - [Configuration](#configuration)
   - [Structured Logging](#structured-logging)
@@ -72,9 +78,9 @@ This monorepo solves all of those problems explicitly:
 │                        AI-Native Monorepo                            │
 │                                                                      │
 │  ┌─────────────────┐           ┌──────────────────────────────────┐  │
-│  │   apps/web       │           │          apps/api                │  │
-│  │                 │  HTTP/JSON │                                  │  │
-│  │  Next.js 16     │◄──────────►│  FastAPI + Python 3.11          │  │
+│  │   apps/web      │           │          apps/api                │  │
+│  │                 │  HTTP/JSON│                                  │  │
+│  │  Next.js 16     │◄─────────►│  FastAPI + Python 3.11           │  │
 │  │  React 19       │           │  SQLAlchemy + Alembic            │  │
 │  │  Tailwind 4     │           │  ChromaDB (vector memory)        │  │
 │  │  App Router     │           │  Pydantic v2                     │  │
@@ -164,7 +170,33 @@ This monorepo solves all of those problems explicitly:
 
 ## Getting Started
 
-### Prerequisites
+### Option A — Docker (recommended)
+
+The fastest way to get a full working stack: FastAPI + PostgreSQL + ChromaDB, all containerised.
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+```bash
+git clone https://github.com/whyujjwal/AgentOptimisedMonorepo.git
+cd AgentOptimisedMonorepo
+
+# Start everything
+bash skills/docker/run.sh up
+
+# Apply database migrations
+bash skills/docker/run.sh migrate
+```
+
+That's it. Services available at:
+- **API** → `http://localhost:8000`
+- **Swagger UI** → `http://localhost:8000/docs`
+- **PostgreSQL** → `localhost:5432` (user: `monorepo`, pass: `monorepo`, db: `monorepo`)
+
+See the [Docker section](#docker) below for all available commands.
+
+### Option B — Local dev without Docker
+
+**Prerequisites:**
 
 | Tool | Install |
 |------|---------|
@@ -174,7 +206,7 @@ This monorepo solves all of those problems explicitly:
 | uv | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | Git | standard |
 
-### 1. Clone and install
+**1. Clone and install:**
 
 ```bash
 git clone https://github.com/whyujjwal/AgentOptimisedMonorepo.git
@@ -187,17 +219,16 @@ pnpm install
 cd apps/api && uv sync && cd ../..
 ```
 
-### 2. Configure environment
+**2. Configure environment:**
 
 ```bash
 cp apps/api/.env.example apps/api/.env
-# Edit apps/api/.env with your values
+# Edit apps/api/.env — SQLite works out of the box, no Postgres config needed
 ```
 
-### 3. Start development servers
+**3. Start all dev servers:**
 
 ```bash
-# Start everything (frontend + backend) via Turborepo
 pnpm dev
 ```
 
@@ -206,7 +237,7 @@ This starts:
 - **Backend** at `http://localhost:8000`
 - **API Docs** at `http://localhost:8000/docs`
 
-### 4. Run backend only
+**Or run backend only:**
 
 ```bash
 cd apps/api && uv run uvicorn app.main:app --reload
@@ -298,6 +329,7 @@ Agents discover skills by reading `skills/SKILLS_REGISTRY.md` first. Skills repl
 | `type-sync` | `bash skills/type-sync/run.sh` | After changing any Pydantic schema |
 | `db-migrate` | `bash skills/db-migrate/run.sh "message"` | After changing a SQLAlchemy model |
 | `openapi-gen` | `bash skills/openapi-gen/run.sh` | To regenerate `openapi.json` alone |
+| `docker` | `bash skills/docker/run.sh up\|down\|migrate` | Start/stop the full stack (API + Postgres) |
 | `memory` | `bash skills/memory/run.sh save\|recall\|list` | Save or recall agent context |
 | `checkpoint` | `bash skills/checkpoint/run.sh "message"` | At logical milestones (commits) |
 | `dependency-add` | `bash skills/dependency-add/run.sh js\|py <pkg>` | Adding any new package |
@@ -312,6 +344,7 @@ These triggers are **mandatory**, not optional:
 Changed apps/api/app/schemas/**   →  bash skills/type-sync/run.sh
 Changed apps/api/app/models/**    →  bash skills/db-migrate/run.sh "reason"
 Need a new package                →  bash skills/dependency-add/run.sh <lang> <pkg>
+Need the local stack running      →  bash skills/docker/run.sh up
 Feature complete                  →  bash skills/checkpoint/run.sh "description"
 Want to remember something        →  bash skills/memory/run.sh save "content"
 ```
@@ -731,9 +764,71 @@ bash skills/memory/run.sh list "decisions"
 
 ---
 
+## Docker
+
+The monorepo ships with a production-ready Docker setup. One command starts the entire stack.
+
+### Services
+
+| Service | Image | Port | Volume |
+|---------|-------|------|--------|
+| `api` | Built from `apps/api/Dockerfile` | 8000 | `chromadb_data:/app/.data/chromadb` |
+| `postgres` | `postgres:16-alpine` | 5432 | `postgres_data:/var/lib/postgresql/data` |
+
+Both services have health checks. The API waits for Postgres to be healthy before starting.
+
+### Docker Commands
+
+```bash
+# Start everything (builds images if needed)
+bash skills/docker/run.sh up
+
+# Run Alembic migrations inside the API container
+bash skills/docker/run.sh migrate
+
+# Tail all logs
+bash skills/docker/run.sh logs
+
+# Tail logs for one service
+bash skills/docker/run.sh logs api
+bash skills/docker/run.sh logs postgres
+
+# Stop containers (data volumes preserved)
+bash skills/docker/run.sh down
+
+# Rebuild images without starting
+bash skills/docker/run.sh build
+
+# Open an interactive shell inside the API container
+bash skills/docker/run.sh shell
+
+# ⚠ Destroy everything including volumes (all data gone)
+bash skills/docker/run.sh reset
+```
+
+### Connecting to Postgres
+
+**Via Docker:**
+```bash
+docker compose exec postgres psql -U monorepo -d monorepo
+```
+
+**From a local client (port 5432 is exposed):**
+```
+postgresql://monorepo:monorepo@localhost:5432/monorepo
+```
+
+To use a different database name or credentials, copy `.env.example` → `.env` and edit:
+```bash
+cp .env.example .env
+# Then edit POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+```
+
+---
+
 ## Environment Variables Reference
 
-Create `apps/api/.env` from `.env.example`. These are the available variables:
+**`apps/api/.env`** — for running the backend locally (copy from `apps/api/.env.example`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -745,7 +840,17 @@ Create `apps/api/.env` from `.env.example`. These are the available variables:
 | `LOG_LEVEL` | `INFO` | Logging threshold (DEBUG/INFO/WARNING/ERROR) |
 | `LOG_JSON` | `false` | Set `true` in production for JSON log output |
 
-For production, `DATABASE_URL` should point to PostgreSQL:
+**`.env`** — for Docker Compose (copy from `.env.example` at the repo root):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `POSTGRES_USER` | `monorepo` | Postgres username |
+| `POSTGRES_PASSWORD` | `monorepo` | Postgres password |
+| `POSTGRES_DB` | `monorepo` | Postgres database name |
+| `LOG_LEVEL` | `INFO` | API log level inside Docker |
+| `DEBUG` | `false` | API debug mode inside Docker |
+
+For production `DATABASE_URL`:
 ```
 DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/dbname
 ```

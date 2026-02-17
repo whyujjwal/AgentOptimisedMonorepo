@@ -22,6 +22,7 @@ Execute skills via: `bash skills/<name>/run.sh [args]`
 - Changed `apps/api/app/models/` → run `db-migrate` skill
 - Completed a feature → run `checkpoint` skill
 - Need a package → run `dependency-add` skill (never run npm/pip directly)
+- Need the local stack running → run `docker up` skill
 
 ### 2. Package Managers
 - Use **pnpm** for all Node/TypeScript dependencies.

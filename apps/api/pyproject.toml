@@ -12,6 +12,7 @@ dependencies = [
     "alembic>=1.18.4",
     "pydantic-settings>=2.13.0",
     "python-dotenv>=1.2.1",
+    "psycopg2-binary>=2.9.0",
 ]
 
 [tool.hatch.build.targets.wheel]

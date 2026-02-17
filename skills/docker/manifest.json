@@ -1,0 +1,41 @@
+{
+  "name": "docker",
+  "version": "1.0.0",
+  "description": "Manage the full monorepo stack (FastAPI + PostgreSQL) using Docker Compose. Handles setup, teardown, migrations, and logs.",
+  "trigger": {
+    "manual": true
+  },
+  "commands": {
+    "up": "Build images and start all services (API + Postgres)",
+    "down": "Stop and remove containers (data volumes preserved)",
+    "restart": "Restart all running services",
+    "logs": "Tail logs from all services (or a specific service)",
+    "ps": "Show container status and health",
+    "build": "Rebuild images only, do not start",
+    "reset": "Destroy all containers AND volumes (data loss — prompts for confirmation)",
+    "migrate": "Run Alembic migrations inside the running API container",
+    "shell": "Open an interactive bash shell inside the API container"
+  },
+  "inputs": [
+    {
+      "name": "ACTION",
+      "description": "One of: up, down, restart, logs, ps, build, reset, migrate, shell",
+      "required": true
+    },
+    {
+      "name": "SERVICE",
+      "description": "Optional: service name for logs (e.g., 'api' or 'postgres')",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "type": "text",
+      "description": "Status output from Docker Compose"
+    }
+  ],
+  "required_tools": ["docker"],
+  "estimated_duration": "10-60s",
+  "risk_level": "medium",
+  "notes": "reset is destructive (removes volumes). Requires Docker Desktop or Docker Engine to be running."
+}
