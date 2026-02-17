@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Turbo
+.turbo/
+
+# Debug logs
+pnpm-debug.log*
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Alembic
+alembic/versions/__pycache__/

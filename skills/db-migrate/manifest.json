@@ -1,0 +1,29 @@
+{
+  "name": "db-migrate",
+  "version": "1.0.0",
+  "description": "Creates and applies Alembic database migrations after SQLAlchemy model changes.",
+  "trigger": {
+    "on_file_change": ["apps/api/app/models/**/*.py"],
+    "manual": true
+  },
+  "steps": [
+    "Auto-generate Alembic migration from model diff",
+    "Apply migration to the database"
+  ],
+  "commands": [
+    "cd apps/api && uv run alembic revision --autogenerate -m \"${MESSAGE}\"",
+    "cd apps/api && uv run alembic upgrade head"
+  ],
+  "inputs": [
+    {
+      "name": "MESSAGE",
+      "description": "Migration description (e.g., 'add users table')",
+      "required": true
+    }
+  ],
+  "outputs": ["apps/api/alembic/versions/*.py"],
+  "required_tools": ["uv"],
+  "estimated_duration": "10s",
+  "risk_level": "medium",
+  "warnings": ["Always review auto-generated migrations before applying to production"]
+}

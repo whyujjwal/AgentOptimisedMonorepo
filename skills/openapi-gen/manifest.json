@@ -1,0 +1,20 @@
+{
+  "name": "openapi-gen",
+  "version": "1.0.0",
+  "description": "Exports the OpenAPI JSON schema from the FastAPI app. A subset of type-sync — use this when you only need the spec, not the full TS type generation.",
+  "trigger": {
+    "on_file_change": ["apps/api/app/schemas/**/*.py", "apps/api/app/api/routes/**/*.py"],
+    "manual": true
+  },
+  "steps": [
+    "Export OpenAPI schema from FastAPI"
+  ],
+  "commands": [
+    "cd apps/api && uv run python -m app.scripts.export_openapi"
+  ],
+  "inputs": [],
+  "outputs": ["openapi.json"],
+  "required_tools": ["uv"],
+  "estimated_duration": "5s",
+  "risk_level": "low"
+}

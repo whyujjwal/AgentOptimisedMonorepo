@@ -1,0 +1,24 @@
+{
+  "name": "type-sync",
+  "version": "1.0.0",
+  "description": "Synchronizes Pydantic schemas to TypeScript types via OpenAPI spec generation. Run this after modifying any Pydantic model in apps/api/app/schemas/.",
+  "trigger": {
+    "on_file_change": ["apps/api/app/schemas/**/*.py"],
+    "manual": true
+  },
+  "steps": [
+    "Export OpenAPI schema from FastAPI app",
+    "Generate TypeScript types from OpenAPI schema",
+    "Verify frontend still compiles"
+  ],
+  "commands": [
+    "cd apps/api && uv run python -m app.scripts.export_openapi",
+    "cd packages/shared-types && pnpm generate",
+    "pnpm build --filter=web"
+  ],
+  "inputs": [],
+  "outputs": ["openapi.json", "packages/shared-types/src/api-types.ts"],
+  "required_tools": ["uv", "pnpm"],
+  "estimated_duration": "30s",
+  "risk_level": "low"
+}

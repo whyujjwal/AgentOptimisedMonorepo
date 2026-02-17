@@ -1,0 +1,23 @@
+{
+  "name": "lint-fix",
+  "version": "1.0.0",
+  "description": "Runs linters and auto-formatters across the entire monorepo. Use before committing or when code style issues are detected.",
+  "trigger": {
+    "on_event": "pre-commit",
+    "manual": true
+  },
+  "steps": [
+    "Lint and fix TypeScript/JavaScript files via ESLint",
+    "Lint Python files via ruff (if installed)"
+  ],
+  "commands": [
+    "pnpm lint",
+    "cd apps/api && uv run ruff check --fix app/ || true",
+    "cd apps/api && uv run ruff format app/ || true"
+  ],
+  "inputs": [],
+  "outputs": [],
+  "required_tools": ["pnpm", "uv"],
+  "estimated_duration": "15s",
+  "risk_level": "low"
+}
