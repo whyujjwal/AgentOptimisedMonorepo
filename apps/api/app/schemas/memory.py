@@ -18,8 +18,10 @@ class MemorySearchRequest(BaseModel):
 
 
 class MemorySearchResult(BaseModel):
+    id: str
     content: str
     score: float | None = None
+    metadata: dict | None = None
 
 
 class MemorySearchResponse(BaseModel):

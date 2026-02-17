@@ -79,7 +79,8 @@ backend and frontend. After any schema change:
 - Shared components from `@repo/ui`
 
 ## Memory & Context
-- **Supermemory**: Long-term semantic memory for the AI backend (`app/services/memory.py`)
+- **ChromaDB**: Local vector database for agent memory (`app/services/memory.py`). No external API needed. Data stored in `.data/chromadb/`.
+- **memory skill**: `bash skills/memory/run.sh save|recall|list` — agents must use this to persist decisions and recall context across sessions.
 - **Entire CLI**: Context versioning — auto-captures agent checkpoints via hooks
 - Agent memory files: `.claude/projects/*/memory/` persists across sessions
 

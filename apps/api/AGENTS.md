@@ -3,7 +3,7 @@
 ## Stack
 - Python 3.11+, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic
 - Package manager: **uv** (never use pip)
-- AI Memory: Supermemory SDK
+- AI Memory: ChromaDB (local vector DB, no external API)
 
 ## Commands
 - `uv run uvicorn app.main:app --reload` — start dev server
@@ -41,12 +41,20 @@ app/
 - New ORM models must be imported in `app/models/__init__.py` for Alembic discovery.
 
 ## Memory Service
+Uses local ChromaDB — no API key required.
+
 ```python
 from app.services.memory import MemoryService
 
 svc = MemoryService()
 svc.add("user prefers dark mode", tags=["user_42"])
 results = svc.search("user preferences", tags=["user_42"])
+```
+
+Or via the memory skill:
+```bash
+bash skills/memory/run.sh save "user prefers dark mode" "user_42"
+bash skills/memory/run.sh recall "what are user preferences?" "user_42"
 ```
 
 ## API Endpoints

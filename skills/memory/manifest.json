@@ -1,0 +1,41 @@
+{
+  "name": "memory",
+  "version": "1.0.0",
+  "description": "Agent memory operations: save important context and recall it later using semantic search. Powered by local ChromaDB vector database.",
+  "trigger": {
+    "on_event": "manual",
+    "manual": true
+  },
+  "commands": {
+    "save": "Store a memory with optional tags and metadata",
+    "recall": "Search memories by semantic similarity",
+    "list": "List all memories, optionally filtered by tags"
+  },
+  "inputs": [
+    {
+      "name": "ACTION",
+      "description": "One of: save, recall, list",
+      "required": true
+    },
+    {
+      "name": "CONTENT",
+      "description": "For save: text to remember. For recall: search query.",
+      "required": false
+    },
+    {
+      "name": "TAGS",
+      "description": "Comma-separated tags for namespacing (e.g., 'user_42,auth_feature')",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "type": "text",
+      "description": "Confirmation message or search results"
+    }
+  ],
+  "required_tools": ["curl", "jq"],
+  "estimated_duration": "1-2s",
+  "risk_level": "low",
+  "notes": "Uses local ChromaDB via the /memory API endpoints. No external dependencies."
+}

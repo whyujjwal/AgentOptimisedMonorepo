@@ -30,6 +30,7 @@ Agents should:
 | `lint-fix` | Before commit / on demand | Runs linters and auto-fixes across the monorepo |
 | `test-run` | After code changes | Runs test suites for affected packages |
 | `dependency-add` | Need to add a package | Adds dependency using correct package manager (pnpm or uv) |
+| `memory` | Any time | Save important context or recall past decisions via local vector DB |
 | `checkpoint` | At logical milestones | Creates a versioned Entire snapshot of codebase + agent context |
 
 ---
@@ -44,15 +45,27 @@ Agents MUST check these trigger conditions after making changes:
 4. **Finished a feature or fix** → Run `test-run`
 5. **Need a new library** → Run `dependency-add` (never run npm/pip directly)
 6. **Completed a logical milestone** → Run `checkpoint` to version agent context
+7. **Want to remember a decision, pattern, or preference** → Run `memory save`
+8. **Need past context before starting a task** → Run `memory recall`
 
 ---
 
 ## AI Infrastructure
 
-### Long-Term Memory (Supermemory)
-Agents can store and retrieve semantic memories via the `/memory/add` and
+### Long-Term Memory (ChromaDB)
+Agents can store and retrieve semantic memories via the `memory` skill, the `/memory/add` and
 `/memory/search` API endpoints, or directly through `app.services.memory.MemoryService`.
-Use `container_tags` to namespace memories per agent or user.
+ChromaDB runs locally — no external API, no account required. Data persists in `.data/chromadb/`.
+Use tags to namespace memories per agent or user.
+
+```bash
+# Save
+bash skills/memory/run.sh save "content" "tag1,tag2"
+# Recall
+bash skills/memory/run.sh recall "query" "tag"
+# List
+bash skills/memory/run.sh list "tag"
+```
 
 ### Context Versioning (Entire CLI)
 Entire captures agent reasoning at every git commit via hooks in `.claude/settings.json`.

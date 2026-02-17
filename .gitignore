@@ -17,6 +17,9 @@ build/
 .env.*.local
 *.db
 
+# Agent Memory (ChromaDB)
+.data/
+
 # IDE
 .vscode/
 .idea/

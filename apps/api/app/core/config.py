@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./dev.db"
 
-    # AI Memory
-    SUPERMEMORY_API_KEY: str = ""
+    # AI Memory (ChromaDB)
+    MEMORY_DB_PATH: str = ".data/chromadb"
 
     # Logging
     LOG_LEVEL: str = "INFO"

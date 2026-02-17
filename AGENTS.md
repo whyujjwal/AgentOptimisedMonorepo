@@ -64,11 +64,13 @@ bash skills/db-migrate/run.sh "add users table"
 - Log levels: DEBUG for dev tracing, INFO for business events, WARNING for recoverable issues, ERROR for failures.
 - Supports kwargs: `logger.info("event", user_id=42, action="login")`
 
-### 10. AI Memory (Supermemory)
-- Long-term semantic memory via Supermemory SDK.
+### 10. AI Memory (ChromaDB — Local Vector DB)
+- Local semantic memory via ChromaDB. Zero external dependencies.
 - Service: `/apps/api/app/services/memory.py` → `MemoryService` class.
 - API endpoints: `POST /memory/add`, `POST /memory/search`.
-- Use `container_tags` to namespace memories per agent or user.
+- **Skill**: `bash skills/memory/run.sh save|recall|list` — use this to persist agent decisions and recall context.
+- Data is stored in `.data/chromadb/` (gitignored). Persists across sessions.
+- Use tags to namespace memories: `agent_backend`, `user_42`, `decisions`, etc.
 
 ### 11. Context Versioning (Entire CLI)
 - Entire captures agent reasoning at every git commit via hooks.

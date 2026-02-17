@@ -23,7 +23,7 @@ def _get_memory_service() -> MemoryService:
 
 @router.post("/add", response_model=MemoryAddResponse)
 async def add_memory(req: MemoryAddRequest):
-    """Store a new memory in Supermemory."""
+    """Store a new memory in the local vector database."""
     svc = _get_memory_service()
     message = svc.add(req.content, tags=req.tags, metadata=req.metadata)
     return MemoryAddResponse(message=message)
