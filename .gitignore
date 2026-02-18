@@ -39,3 +39,15 @@ npm-debug.log*
 
 # Alembic
 alembic/versions/__pycache__/
+
+# PRD Workflow — generated task files (not committed; use tasks/archive/ for history)
+tasks/PRD.md
+tasks/TASKS.md
+
+# Python test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+apps/api/.pytest_cache/
+apps/api/tests/test.db

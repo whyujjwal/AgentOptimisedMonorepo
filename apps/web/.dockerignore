@@ -1,0 +1,47 @@
+# Exclude build artifacts and dev-only paths from the Docker build context.
+# This applies when building with: docker build -f apps/web/Dockerfile .
+
+# Version control
+.git/
+.gitignore
+
+# Python stack (not needed for web image)
+.venv/
+apps/api/
+**/__pycache__/
+**/*.pyc
+**/*.egg-info/
+
+# Build outputs (rebuilt inside Docker)
+**/.next/
+**/out/
+**/dist/
+**/build/
+
+# Dependencies (reinstalled inside Docker)
+**/node_modules/
+
+# Dev data and secrets
+.data/
+*.db
+.env
+.env.local
+.env.*.local
+
+# Agent tooling
+.entire/
+.claude/
+tasks/
+skills/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Test artifacts
+**/.pytest_cache/
+**/htmlcov/
+**/.coverage

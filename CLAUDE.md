@@ -12,6 +12,8 @@ rules to avoid conflicts and maintain consistency.
 /packages/shared-types/ → Auto-generated TS types from OpenAPI
 /packages/ui/       → Shared React components
 /skills/            → Executable skill scripts for agents (read SKILLS_REGISTRY.md)
+/rules/             → AI rule files for structured feature development (PRD workflow)
+/tasks/             → Generated PRD.md and TASKS.md (gitignored per-feature work)
 ```
 
 ## Package Managers
@@ -30,6 +32,25 @@ Key skills:
 - `dependency-add` — to add packages correctly
 - `lint-fix` — before committing
 - `test-run` — after completing work
+- `prd-workflow` — **start here for new features** (PRD → tasks → execution)
+- `deploy` — emergency manual deploy to Google Cloud Run (prefer CI/CD)
+
+## PRD Workflow (Structured Feature Development)
+
+Before writing any code for a new feature, use the 3-step PRD workflow:
+
+```bash
+bash skills/prd-workflow/run.sh init   # prints exact agent instructions
+```
+
+Then in your agent session, reference rule files in order:
+
+1. **Define** — `@rules/generate_prd.md` + describe feature → produces `tasks/PRD.md`
+2. **Plan**   — `@rules/generate_tasks.md @tasks/PRD.md`   → produces `tasks/TASKS.md`
+3. **Build**  — `@rules/task_list_management.md @tasks/TASKS.md` → executes one task at a time
+
+Rule files are in `/rules/`. Task files are written to `/tasks/` (not committed by default).
+See `skills/prd-workflow/README.md` for the full rationale.
 
 ## Multi-Agent Coordination Rules
 
@@ -77,6 +98,33 @@ backend and frontend. After any schema change:
 - Server Components by default, `"use client"` only when needed
 - API types from `@repo/shared-types`, never local type definitions
 - Shared components from `@repo/ui`
+
+## CI/CD
+
+### GitHub Actions Workflows
+- `.github/workflows/ci.yml` — runs on every push/PR: lint, type-check, pytest, Next.js build. Path-filtered (only runs jobs for changed zones).
+- `.github/workflows/deploy.yml` — runs on push to `main` only: builds Docker images → pushes to Artifact Registry → deploys to Cloud Run. Requires CI to pass (enforce via branch protection).
+- `.github/workflows/pr.yml` — auto-labels PRs by changed path, runs Turbo affected build.
+
+### Deployment (Google Cloud Run)
+- API and Web are separate Cloud Run services.
+- Auth uses **Workload Identity Federation** — no JSON keys stored anywhere.
+- **Secrets** (DATABASE_URL, SECRET_KEY) live in GCP Secret Manager, injected at runtime via `--set-secrets`.
+- **`NEXT_PUBLIC_API_URL`** is baked into the web Docker image at build time via `--build-arg` (Next.js bundles public vars at compile time, not at runtime).
+- ChromaDB runs ephemerally on Cloud Run (`MEMORY_DB_PATH=/tmp/chromadb`). Data is not persisted across instances.
+
+### Local Dev Entrypoint
+```bash
+make help          # all targets
+make setup         # first-time: copies .env files, installs deps
+make dev           # starts Docker stack + web dev server
+make test          # run all tests
+make lint          # lint and fix
+make deploy-api    # emergency manual deploy (requires gcloud auth)
+```
+
+### One-time GCP Setup
+See `skills/deploy/README.md` for the full WIF setup, IAM roles, Artifact Registry creation, and Secret Manager configuration.
 
 ## Memory & Context
 - **ChromaDB**: Local vector database for agent memory (`app/services/memory.py`). No external API needed. Data stored in `.data/chromadb/`.

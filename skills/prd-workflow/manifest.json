@@ -1,0 +1,36 @@
+{
+  "name": "prd-workflow",
+  "version": "1.0.0",
+  "description": "Ryan Carson's 3-step AI coding workflow: PRD generation → task list → one-task-at-a-time execution. Enforces structured feature development via rule files in rules/.",
+  "trigger": {
+    "on_event": "manual",
+    "manual": true
+  },
+  "commands": {
+    "init": "Scaffold a new feature: creates tasks/ dir and prints step-by-step agent instructions",
+    "status": "Show current task list progress from tasks/TASKS.md",
+    "reset": "Archive the current tasks/ dir and start fresh"
+  },
+  "inputs": [
+    {
+      "name": "COMMAND",
+      "description": "One of: init, status, reset",
+      "required": true
+    },
+    {
+      "name": "FEATURE",
+      "description": "Short feature name (used for directory naming on reset, e.g. 'user-auth')",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "type": "text",
+      "description": "Instructions for the agent to follow, or task list status"
+    }
+  ],
+  "required_tools": ["bash"],
+  "estimated_duration": "1-2s",
+  "risk_level": "low",
+  "notes": "Rule files live in rules/. Task files are written to tasks/. One feature at a time. See README.md for full workflow."
+}

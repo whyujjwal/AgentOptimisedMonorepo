@@ -1,0 +1,33 @@
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "apps/web/**"
+      - "packages/ui/**"
+
+backend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "apps/api/**"
+
+shared-types:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "packages/shared-types/**"
+
+infra:
+  - changed-files:
+    - any-glob-to-any-file:
+      - ".github/**"
+      - "docker-compose.yml"
+      - "Makefile"
+      - "skills/**"
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "pnpm-lock.yaml"
+      - "uv.lock"
+      - "pyproject.toml"
+      - "package.json"
+      - "apps/*/package.json"
+      - "packages/*/package.json"

@@ -22,8 +22,8 @@ services:
   # ── FastAPI Backend ─────────────────────────────────────────────────────────
   api:
     build:
-      context: apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: monorepo_api
     restart: unless-stopped
     depends_on:
@@ -31,12 +31,12 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-monorepo}:${POSTGRES_PASSWORD:-monorepo}@postgres:5432/${POSTGRES_DB:-monorepo}
-      MEMORY_DB_PATH: /data/chromadb
+      MEMORY_DB_PATH: .data/chromadb
       LOG_JSON: "true"
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DEBUG: ${DEBUG:-false}
     volumes:
-      - chromadb_data:/app/.data/chromadb
+      - chromadb_data:/app/apps/api/.data/chromadb
     ports:
       - "8000:8000"
     healthcheck:

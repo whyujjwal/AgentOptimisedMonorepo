@@ -1,0 +1,190 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Never cancel an in-flight deploy — always let it finish.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION:     ${{ vars.GCP_REGION || 'us-central1' }}
+  GAR_LOCATION:   ${{ vars.GAR_LOCATION || 'us-central1' }}
+  GAR_REPO:       ${{ vars.GAR_REPO || 'monorepo' }}
+
+jobs:
+  # ── Deploy API ──────────────────────────────────────────────────────────────
+  deploy-api:
+    name: Deploy API → Cloud Run
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write   # Required for Workload Identity Federation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Set image tag
+        id: tag
+        run: |
+          SHA="${{ github.sha }}"
+          SHORT="${SHA:0:7}"
+          BASE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/api"
+          echo "image=${BASE}:${SHORT}"       >> $GITHUB_OUTPUT
+          echo "latest=${BASE}:latest"         >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT}"            >> $GITHUB_OUTPUT
+
+      - name: Build API Docker image
+        run: |
+          docker build \
+            -f apps/api/Dockerfile \
+            -t ${{ steps.tag.outputs.image }} \
+            -t ${{ steps.tag.outputs.latest }} \
+            .
+
+      - name: Push API image to Artifact Registry
+        run: |
+          docker push ${{ steps.tag.outputs.image }}
+          docker push ${{ steps.tag.outputs.latest }}
+
+      - name: Deploy API to Cloud Run
+        run: |
+          gcloud run deploy api \
+            --image "${{ steps.tag.outputs.image }}" \
+            --region "${{ env.GCP_REGION }}" \
+            --project "${{ env.GCP_PROJECT_ID }}" \
+            --platform managed \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest" \
+            --set-env-vars "LOG_JSON=true,LOG_LEVEL=INFO,DEBUG=false,MEMORY_DB_PATH=/tmp/chromadb" \
+            --min-instances 1 \
+            --max-instances 10 \
+            --memory 1Gi \
+            --cpu 1 \
+            --timeout 300 \
+            --concurrency 40
+
+      - name: Get API URL
+        id: api-url
+        run: |
+          URL="$(gcloud run services describe api \
+            --region "${{ env.GCP_REGION }}" \
+            --project "${{ env.GCP_PROJECT_ID }}" \
+            --format 'value(status.url)')"
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "API deployed: $URL"
+
+      - name: Smoke test API health endpoint
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ steps.api-url.outputs.url }}/health" || echo "000")
+          echo "Health check status: $STATUS"
+          if [[ "$STATUS" != "200" ]]; then
+            echo "ERROR: API health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "✓ API is healthy"
+
+  # ── Deploy Web ──────────────────────────────────────────────────────────────
+  deploy-web:
+    name: Deploy Web → Cloud Run
+    runs-on: ubuntu-latest
+    environment: production
+    needs: [deploy-api]
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Resolve production API URL
+        id: api-url
+        run: |
+          # Prefer the GitHub secret (set it after first API deploy).
+          # Falls back to auto-detecting from Cloud Run.
+          PROD_API_URL="${{ secrets.PROD_API_URL }}"
+          if [[ -z "$PROD_API_URL" ]]; then
+            PROD_API_URL="$(gcloud run services describe api \
+              --region "${{ env.GCP_REGION }}" \
+              --project "${{ env.GCP_PROJECT_ID }}" \
+              --format 'value(status.url)')"
+          fi
+          echo "url=$PROD_API_URL" >> $GITHUB_OUTPUT
+          echo "Building web with NEXT_PUBLIC_API_URL=$PROD_API_URL"
+
+      - name: Set image tag
+        id: tag
+        run: |
+          SHA="${{ github.sha }}"
+          SHORT="${SHA:0:7}"
+          BASE="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/web"
+          echo "image=${BASE}:${SHORT}" >> $GITHUB_OUTPUT
+          echo "latest=${BASE}:latest"  >> $GITHUB_OUTPUT
+
+      - name: Build Web Docker image
+        run: |
+          docker build \
+            -f apps/web/Dockerfile \
+            --build-arg "NEXT_PUBLIC_API_URL=${{ steps.api-url.outputs.url }}" \
+            -t ${{ steps.tag.outputs.image }} \
+            -t ${{ steps.tag.outputs.latest }} \
+            .
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Push Web image to Artifact Registry
+        run: |
+          docker push ${{ steps.tag.outputs.image }}
+          docker push ${{ steps.tag.outputs.latest }}
+
+      - name: Deploy Web to Cloud Run
+        run: |
+          gcloud run deploy web \
+            --image "${{ steps.tag.outputs.image }}" \
+            --region "${{ env.GCP_REGION }}" \
+            --project "${{ env.GCP_PROJECT_ID }}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 5 \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 60 \
+            --concurrency 80
+
+      - name: Get Web URL
+        run: |
+          URL="$(gcloud run services describe web \
+            --region "${{ env.GCP_REGION }}" \
+            --project "${{ env.GCP_PROJECT_ID }}" \
+            --format 'value(status.url)')"
+          echo "Web deployed: $URL"

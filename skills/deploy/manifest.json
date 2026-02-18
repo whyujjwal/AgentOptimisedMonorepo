@@ -1,0 +1,56 @@
+{
+  "name": "deploy",
+  "version": "1.0.0",
+  "description": "Manually deploy API or Web service to Google Cloud Run. Builds Docker image, pushes to Artifact Registry, then deploys. Requires gcloud CLI authenticated and Docker running.",
+  "trigger": {
+    "on_event": "manual",
+    "manual": true
+  },
+  "commands": {
+    "api": "Build and deploy the FastAPI backend to Cloud Run",
+    "web": "Build and deploy the Next.js frontend to Cloud Run (auto-detects API URL)",
+    "all": "Deploy API then Web sequentially"
+  },
+  "inputs": [
+    {
+      "name": "TARGET",
+      "description": "One of: api, web, all",
+      "required": true
+    },
+    {
+      "name": "GCP_PROJECT",
+      "description": "GCP project ID. Defaults to `gcloud config get-value project`.",
+      "required": false
+    },
+    {
+      "name": "GCP_REGION",
+      "description": "GCP region for Cloud Run. Defaults to us-central1.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_TAG",
+      "description": "Docker image tag. Defaults to current git SHA (short).",
+      "required": false
+    },
+    {
+      "name": "PROD_API_URL",
+      "description": "Production API URL baked into the web image. Auto-detected from Cloud Run if not set.",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "type": "text",
+      "description": "Cloud Run service URL after deployment"
+    }
+  ],
+  "required_tools": ["docker", "gcloud"],
+  "estimated_duration": "3-8 minutes",
+  "risk_level": "high",
+  "notes": [
+    "Production deployments should go through the GitHub Actions deploy workflow (push to main).",
+    "Use this skill only for emergency hotfixes or initial service setup.",
+    "Requires: gcloud auth login && gcloud auth configure-docker <GAR_LOCATION>-docker.pkg.dev",
+    "See README.md for one-time GCP setup (WIF, IAM, Secret Manager, Artifact Registry)."
+  ]
+}

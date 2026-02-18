@@ -33,6 +33,8 @@ Agents should:
 | `memory` | Any time | Save important context or recall past decisions via local vector DB |
 | `docker` | On demand | Manage full stack (API + PostgreSQL) via Docker Compose |
 | `checkpoint` | At logical milestones | Creates a versioned Entire snapshot of codebase + agent context |
+| `prd-workflow` | Starting a new feature | Ryan Carson's 3-step workflow: PRD → task list → one-task-at-a-time execution |
+| `deploy` | Emergency manual deploy | Build Docker image and deploy API or Web to Google Cloud Run via gcloud |
 
 ---
 
@@ -49,6 +51,27 @@ Agents MUST check these trigger conditions after making changes:
 7. **Want to remember a decision, pattern, or preference** → Run `memory save`
 8. **Need past context before starting a task** → Run `memory recall`
 9. **Need to start or manage the local stack** → Run `docker up|down|migrate`
+10. **Starting work on a new feature** → Run `prd-workflow init` and follow the 3-step rule-file workflow
+11. **Need to deploy manually outside CI/CD** → Run `deploy api|web` (requires gcloud auth; prefer pushing to `main`)
+
+---
+
+## PRD Workflow (Rule Files)
+
+The `prd-workflow` skill orchestrates three AI rule files that enforce structured feature development:
+
+| Rule File | When to Use | Output |
+|-----------|-------------|--------|
+| `rules/generate_prd.md` | Beginning of a feature | `tasks/PRD.md` |
+| `rules/generate_tasks.md` | After PRD is written | `tasks/TASKS.md` |
+| `rules/task_list_management.md` | During implementation | Updated `tasks/TASKS.md` |
+
+**In your agent**, reference rule files like this:
+```
+@rules/generate_prd.md I want to build: <describe feature>
+@rules/generate_tasks.md @tasks/PRD.md
+@rules/task_list_management.md @tasks/TASKS.md
+```
 
 ---
 

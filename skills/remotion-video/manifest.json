@@ -1,0 +1,36 @@
+{
+  "name": "remotion-video",
+  "version": "1.0.0",
+  "description": "Generate videos using Remotion — a React-based video composition framework. Supports rendering videos from React components with full TypeScript support.",
+  "trigger": {
+    "on_file_change": ["apps/web/src/videos/**/*.tsx"],
+    "manual": true
+  },
+  "steps": [
+    "Ensure Remotion is installed in apps/web",
+    "Validate video component exists",
+    "Render video to MP4/WebM output",
+    "Generate preview or full render"
+  ],
+  "commands": [
+    "cd apps/web && pnpm remotion render [composition-id] [output-file]",
+    "cd apps/web && pnpm remotion preview [composition-id]"
+  ],
+  "inputs": [
+    "composition-id: The Remotion composition name to render (required)",
+    "output-file: Output file path for rendered video (optional, defaults to dist/video.mp4)",
+    "props: JSON string of props to pass to composition (optional)",
+    "preview: Boolean flag to start preview server instead of rendering (optional)"
+  ],
+  "outputs": [
+    "Rendered video file (MP4/WebM)",
+    "Preview server logs"
+  ],
+  "required_tools": ["pnpm", "node"],
+  "estimated_duration": "5m-30m (depends on video length and resolution)",
+  "risk_level": "low",
+  "dependencies": {
+    "npm_packages": ["remotion", "@remotion/cli", "@remotion/player"],
+    "node_version": ">=18.0.0"
+  }
+}

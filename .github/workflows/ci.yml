@@ -1,0 +1,279 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Detect which parts of the repo changed ──────────────────────────────────
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend:  ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      shared:   ${{ steps.filter.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apps/api/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+            frontend:
+              - 'apps/web/**'
+              - 'packages/ui/**'
+            shared:
+              - 'packages/shared-types/**'
+
+  # ── Lint & type-check ───────────────────────────────────────────────────────
+  lint:
+    name: Lint (${{ matrix.runner }})
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.shared == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [python, node]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Python linting ──────────────────────────────────────────────────────
+      - name: Set up Python
+        if: matrix.runner == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        if: matrix.runner == 'python'
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python dev dependencies
+        if: matrix.runner == 'python'
+        run: uv sync --dev
+
+      - name: Ruff lint
+        if: matrix.runner == 'python'
+        run: uv run ruff check apps/api/app/
+
+      - name: Ruff format check
+        if: matrix.runner == 'python'
+        run: uv run ruff format --check apps/api/app/
+
+      # ── Node linting ────────────────────────────────────────────────────────
+      - name: Set up Node
+        if: matrix.runner == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up pnpm
+        if: matrix.runner == 'node'
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.30.0"
+          run_install: false
+
+      - name: Get pnpm store path
+        if: matrix.runner == 'node'
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        if: matrix.runner == 'node'
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install JS dependencies
+        if: matrix.runner == 'node'
+        run: pnpm install --frozen-lockfile
+
+      - name: Turbo lint
+        if: matrix.runner == 'node'
+        run: pnpm turbo run lint
+
+      - name: TypeScript type-check (web)
+        if: matrix.runner == 'node'
+        run: pnpm exec tsc --noEmit --project apps/web/tsconfig.json
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+
+  # ── Python tests ────────────────────────────────────────────────────────────
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python dev dependencies
+        run: uv sync --dev
+
+      - name: Run Alembic migrations
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg2://test:test@localhost:5432/test_db
+        run: uv run alembic upgrade head
+
+      - name: Run pytest
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg2://test:test@localhost:5432/test_db
+          MEMORY_DB_PATH: /tmp/test-chromadb
+          LOG_JSON: "false"
+          LOG_LEVEL: WARNING
+        run: uv run pytest -v --tb=short
+
+  # ── Next.js build check ─────────────────────────────────────────────────────
+  test-web:
+    name: Test Web (build)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.shared == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.30.0"
+          run_install: false
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages first
+        run: pnpm turbo run build --filter=@repo/shared-types --filter=@repo/ui
+
+      - name: Build web
+        run: pnpm turbo run build --filter=web
+        env:
+          NEXT_PUBLIC_API_URL: http://placeholder.example.com
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  # ── Full build gate ─────────────────────────────────────────────────────────
+  build-check:
+    name: Full build check
+    runs-on: ubuntu-latest
+    needs: [lint, test-api, test-web]
+    # Run if at least one upstream job ran (and none failed)
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.30.0"
+          run_install: false
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Turbo full build
+        run: pnpm turbo run build
+        env:
+          NEXT_PUBLIC_API_URL: http://placeholder.example.com
+          NEXT_TELEMETRY_DISABLED: "1"
