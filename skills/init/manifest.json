@@ -1,7 +1,7 @@
 {
   "name": "init",
   "version": "1.0.0",
-  "description": "Initialize this template for a new project. Renames all hardcoded identifiers (project name, package scope, descriptions, container names) across the entire repo.",
+  "description": "Initialize this template for a new project. Renames all hardcoded identifiers (project name, package scope, descriptions, container names) across the entire repo. Optionally scaffolds an MCP server.",
   "trigger": {
     "on_event": "first_clone",
     "manual": true
@@ -28,6 +28,11 @@
     {
       "name": "DESCRIPTION",
       "description": "One-line project description for API and metadata.",
+      "required": false
+    },
+    {
+      "name": "SETUP_MCP",
+      "description": "Set to 'y' to scaffold an MCP server package at packages/mcp-server/.",
       "required": false
     }
   ],

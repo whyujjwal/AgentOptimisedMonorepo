@@ -1,6 +1,6 @@
 # init — Template Initialization
 
-One-time script to customize this monorepo template for your project. Renames all hardcoded identifiers across the entire repo.
+One-time script to customize this monorepo template for your project. Renames all hardcoded identifiers across the entire repo and optionally scaffolds an MCP server.
 
 ## Usage
 
@@ -9,7 +9,7 @@ One-time script to customize this monorepo template for your project. Renames al
 bash skills/init/run.sh
 
 # Non-interactive (all values via env vars)
-PROJECT_NAME="My App" PROJECT_SLUG="my-app" PACKAGE_SCOPE="myorg" DESCRIPTION="My awesome app" \
+PROJECT_NAME="My App" PROJECT_SLUG="my-app" PACKAGE_SCOPE="myorg" DESCRIPTION="My awesome app" SETUP_MCP=y \
   bash skills/init/run.sh
 ```
 
@@ -21,6 +21,7 @@ PROJECT_NAME="My App" PROJECT_SLUG="my-app" PACKAGE_SCOPE="myorg" DESCRIPTION="M
 | Project slug | `my-awesome-app` | Auto-derived from name |
 | Package scope | `myorg` (becomes `@myorg/`) | `repo` |
 | Description | `A SaaS platform for X` | `A modern full-stack application` |
+| Create MCP server? | `y` / `n` | `n` |
 
 ## What gets replaced
 
@@ -36,8 +37,26 @@ PROJECT_NAME="My App" PROJECT_SLUG="my-app" PACKAGE_SCOPE="myorg" DESCRIPTION="M
 | `GAR_REPO=monorepo` | `GAR_REPO={slug}` | `Makefile`, deploy files |
 | GitHub URL | `YOUR_ORG/{slug}` | `README.md` |
 
+## MCP Server (optional)
+
+If you say yes to the MCP prompt, the script creates `packages/mcp-server/` with:
+
+```
+packages/mcp-server/
+├── src/
+│   ├── index.ts          # Server entry (stdio transport)
+│   └── tools/
+│       └── index.ts      # Tool registry (hello tool included)
+├── package.json          # @{scope}/mcp-server
+├── tsconfig.json
+└── README.md
+```
+
+Uses `@modelcontextprotocol/sdk`. Add tools in `src/tools/index.ts`, build with `pnpm build`, and configure in Claude Desktop or Claude Code. See `packages/mcp-server/README.md` after creation.
+
 ## After running
 
 1. Review the changes (`git diff` if git history was kept)
 2. Edit `.env` files with real secrets
 3. Run `make dev` to start developing
+4. If MCP was created: `pnpm --filter @{scope}/mcp-server build`
