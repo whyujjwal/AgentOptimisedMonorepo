@@ -1,0 +1,17 @@
+So this is a monorepo where anyone can fetch this and create their application. I wanted to be more flexible. Basically, I want the user to be able to name it whatever they want, based on their application. I want them to have flexibility. Can you design it in such a way that the user can use it for different use cases?
+
+---
+
+make the readme file good and small just describing how to use and move the whole description to docs
+
+---
+
+push to gihub
+
+---
+
+remove coauthored by claude from everywhere
+
+---
+
+add suport for creating mcp as well but add it  as init feature
