@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "1c420c054d63",
+  "session_id": "787296c2-4d3a-4cc2-aa8d-7d7649dd86d9",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-20T11:15:40.630916Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "CLAUDE.md",
+    "README.md",
+    "docs/architecture.md",
+    "docs/backend.md",
+    "docs/docker.md",
+    "docs/environment.md",
+    "docs/frontend.md",
+    "docs/memory.md",
+    "skills/SKILLS_REGISTRY.md",
+    "skills/init/README.md",
+    "skills/init/manifest.json",
+    "skills/init/run.sh"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f9ba0522a0c9",
+  "token_usage": {
+    "input_tokens": 1273,
+    "cache_creation_tokens": 119383,
+    "cache_read_tokens": 1986896,
+    "output_tokens": 20627,
+    "api_call_count": 39
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-20T11:15:40.276973Z",
+    "agent_lines": 567,
+    "human_added": 0,
+    "human_modified": 3,
+    "human_removed": 349,
+    "total_committed": 570,
+    "agent_percentage": 99.47368421052632
+  },
+  "transcript_path": ".claude/projects/-Users-ujjwalraj-Developer-Experiments-AgentOptimisedMonorepo/787296c2-4d3a-4cc2-aa8d-7d7649dd86d9.jsonl"
+}
